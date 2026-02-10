@@ -8,7 +8,7 @@ import BookTable from './components/BookTable';
 import BookFormModal from './components/BookFormModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import AuthModal from './components/AuthModal';
-import { Library, Loader2, Cloud } from 'lucide-react';
+import { Library, Loader2, Cloud, Heart, Globe } from 'lucide-react';
 
 // مكون العداد المتحرك الداخلي
 const AnimatedNumber: React.FC<{ value: number }> = ({ value }) => {
@@ -206,7 +206,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFF] pb-24 text-right" dir="rtl">
+    <div className="min-h-screen bg-[#FDFDFF] flex flex-col text-right" dir="rtl">
       <Header 
         onAddClick={() => { setEditingBook(null); setIsModalOpen(true); }} 
         onAuthClick={() => setIsAuthOpen(true)}
@@ -214,14 +214,14 @@ const App: React.FC = () => {
         onLogout={handleLogout}
       />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 md:mt-12">
+      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 md:mt-12 w-full pb-20">
         <StatsCards stats={stats} />
         
         {user && (
            <div className="mt-8 flex items-center justify-center">
              <div className="flex items-center gap-3 bg-green-50 text-green-600 px-6 py-3 rounded-2xl border border-green-100 animate-in fade-in slide-in-from-bottom-2">
                <Cloud size={18} className="animate-pulse" />
-               <span className="text-sm font-bold">المزامنة السحابية نشطة لجهازك الآن</span>
+               <span className="text-sm font-bold">المزامنة السحابية نشطة لجهازك الآن عبر Vercel</span>
              </div>
            </div>
         )}
@@ -274,6 +274,24 @@ const App: React.FC = () => {
           </>
         )}
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-100 py-10">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center text-center">
+          <div className="flex items-center gap-2 mb-4">
+            <Globe className="text-[#94B4BC]" size={20} />
+            <span className="text-lg font-black text-slate-800 tracking-tight">مكتبة الضياء</span>
+          </div>
+          <p className="text-slate-400 text-sm font-bold flex items-center gap-1.5 mb-2">
+            صنع بكل <Heart className="text-red-400 fill-red-400" size={14} /> لخدمة الباحثين وطلاب العلم
+          </p>
+          <div className="flex items-center gap-4 text-[10px] text-slate-300 font-bold uppercase tracking-widest mt-4">
+            <span>حقوق النشر © {new Date().getFullYear()}</span>
+            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+            <span>نشر بواسطة VERCEL</span>
+          </div>
+        </div>
+      </footer>
 
       <BookFormModal 
         isOpen={isModalOpen} 
