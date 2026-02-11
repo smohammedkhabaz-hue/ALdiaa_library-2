@@ -236,7 +236,7 @@ const App: React.FC = () => {
             <span className="text-2xl font-black text-[#94B4BC] tracking-tight">مكتبة الضياء</span>
           </div>
           <p className="text-slate-400 text-sm font-black uppercase tracking-[0.3em] mb-4 select-none">
-            ALDIAA ELECTRONIC LIBRARY
+            ALDHIYAA ELECTRONIC AIBRARY
           </p>
           <div className="w-12 h-1 bg-slate-50 rounded-full mb-4"></div>
           <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest">

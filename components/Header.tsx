@@ -25,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onAddClick, onAuthClick, user, onLogout
               مكتبة الضياء
             </h1>
             <div className="flex justify-between w-full text-[6px] md:text-[8px] font-black text-slate-500 uppercase leading-none select-none tracking-tighter">
-              {"YRARBIL AAIDLA".split('').map((char, index) => (
+              {"YRARBYA AAYIHDLA".split('').map((char, index) => (
                 <span key={index} className="flex-none">
                   {char === ' ' ? '\u00A0' : char}
                 </span>
