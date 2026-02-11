@@ -1,15 +1,15 @@
 
 export interface Book {
   id: string;
-  userId?: string; // لربط الكتاب بالمستخدم
+  userId: string; // إلزامي لربط الكتاب بالمستخدم
   title: string;
   author: string;
-  editor: string; // المحقق
-  course: string; // المقرر
-  volumes: number; // عدد الأجزاء
-  publisher: string; // دار النشر
-  printPlace: string; // مكان الطباعة
-  notes: string; // ملاحظات إضافية
+  editor: string; 
+  course: string; 
+  volumes: number; 
+  publisher: string; 
+  printPlace: string; 
+  notes: string; 
   createdAt: number;
 }
 
@@ -20,8 +20,6 @@ export interface User {
   photoURL?: string;
   isLoggedIn: boolean;
 }
-
-export type SearchCategory = 'title' | 'author' | 'publisher' | 'printPlace';
 
 export interface Stats {
   totalBooks: number;

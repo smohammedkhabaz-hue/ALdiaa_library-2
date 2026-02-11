@@ -7,43 +7,16 @@ import SearchBar from './components/SearchBar';
 import BookTable from './components/BookTable';
 import BookFormModal from './components/BookFormModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
+import DuplicateWarningModal from './components/DuplicateWarningModal';
 import AuthModal from './components/AuthModal';
-import { Library, Loader2, Cloud, Heart, Globe } from 'lucide-react';
+import { Library, Loader2, Info } from 'lucide-react';
 
-// مكون العداد المتحرك الداخلي
-const AnimatedNumber: React.FC<{ value: number }> = ({ value }) => {
-  const [displayValue, setDisplayValue] = useState(0);
-  const startTimeRef = useRef<number | null>(null);
-  const prevValueRef = useRef(0);
-  const duration = 1000;
-
-  useEffect(() => {
-    const animate = (timestamp: number) => {
-      if (!startTimeRef.current) startTimeRef.current = timestamp;
-      const progress = Math.min((timestamp - startTimeRef.current) / duration, 1);
-      const easeOutExpo = (x: number): number => x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
-      const currentCount = Math.floor(prevValueRef.current + (value - prevValueRef.current) * easeOutExpo(progress));
-      setDisplayValue(currentCount);
-      if (progress < 1) requestAnimationFrame(animate);
-      else {
-        setDisplayValue(value);
-        prevValueRef.current = value;
-        startTimeRef.current = null;
-      }
-    };
-    requestAnimationFrame(animate);
-  }, [value]);
-
-  return <span>{displayValue.toLocaleString('ar-EG')}</span>;
-};
-
-// IndexedDB Helper
 const DB_NAME = 'AldiaaDB';
 const STORE_NAME = 'books';
 
 const initDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(DB_NAME, 2);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -55,44 +28,39 @@ const initDB = (): Promise<IDBDatabase> => {
   });
 };
 
-interface SearchFilters {
-  title: string;
-  author: string;
-  publisher: string;
-  printPlace: string;
-  editor: string;
-  course: string;
-}
-
 const App: React.FC = () => {
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
+  const [duplicateBookCheck, setDuplicateBookCheck] = useState<{data: Omit<Book, 'id' | 'createdAt' | 'userId'>, stayOpen: boolean} | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
   
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
-    title: '',
-    author: '',
-    publisher: '',
-    printPlace: '',
-    editor: '',
-    course: ''
+  const [searchFilters, setSearchFilters] = useState({
+    title: '', author: '', publisher: '', printPlace: '', editor: '', course: ''
   });
 
-  // Load from IndexedDB
+  // محاكاة مزامنة سحابية عند تسجيل الدخول
   useEffect(() => {
+    const savedUser = localStorage.getItem('aldiaa_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    
     const loadData = async () => {
+      setLoading(true);
       try {
         const db = await initDB();
         const transaction = db.transaction(STORE_NAME, 'readonly');
         const store = transaction.objectStore(STORE_NAME);
         const request = store.getAll();
         request.onsuccess = () => {
-          setAllBooks(request.result || []);
+          let books = request.result || [];
+          setAllBooks(books);
           setLoading(false);
         };
       } catch (err) {
@@ -101,21 +69,23 @@ const App: React.FC = () => {
       }
     };
     loadData();
-
-    // استعادة حالة المستخدم من localStorage (محاكاة)
-    const savedUser = localStorage.getItem('aldiaa_user');
-    if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
 
   const handleLogin = (email: string, name: string) => {
-    const newUser = { id: crypto.randomUUID(), email, name, isLoggedIn: true };
+    const newUser = { id: email.replace(/[^a-zA-Z0-9]/g, '_'), email, name, isLoggedIn: true };
     setUser(newUser);
     localStorage.setItem('aldiaa_user', JSON.stringify(newUser));
+    
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+    }, 2000);
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('aldiaa_user');
+    setAllBooks([]); 
   };
 
   const stats: Stats = useMemo(() => {
@@ -126,15 +96,15 @@ const App: React.FC = () => {
       totalVolumes += (Number(b.volumes) || 0);
     });
     return {
-      totalBooks: allBooks.length,
-      totalVolumes,
-      totalAuthors: uniqueAuthors.size
+      totalBooks: allBooks.length, totalVolumes, totalAuthors: uniqueAuthors.size
     };
   }, [allBooks]);
 
   const filteredBooks = useMemo(() => {
     return allBooks.filter(book => {
-      return (
+      const matchesUser = user ? book.userId === user.id : true; 
+      
+      return matchesUser && (
         book.title.toLowerCase().includes(searchFilters.title.toLowerCase()) &&
         book.author.toLowerCase().includes(searchFilters.author.toLowerCase()) &&
         (book.publisher || '').toLowerCase().includes(searchFilters.publisher.toLowerCase()) &&
@@ -143,28 +113,34 @@ const App: React.FC = () => {
         (book.course || '').toLowerCase().includes(searchFilters.course.toLowerCase())
       );
     }).sort((a, b) => b.createdAt - a.createdAt);
-  }, [allBooks, searchFilters]);
+  }, [allBooks, searchFilters, user]);
 
-  const currentVisibleBooks = useMemo(() => {
-    return filteredBooks.slice(0, visibleCount);
-  }, [filteredBooks, visibleCount]);
+  const handleSaveBook = async (bookData: Omit<Book, 'id' | 'createdAt' | 'userId'>, stayOpen: boolean = false, force: boolean = false) => {
+    if (!user) {
+      setIsAuthOpen(true);
+      return;
+    }
 
-  const handleSaveBook = async (bookData: Omit<Book, 'id' | 'createdAt'>, stayOpen: boolean = false) => {
+    if (!force) {
+      const isDuplicate = allBooks.some(b => 
+        b.title.trim().toLowerCase() === bookData.title.trim().toLowerCase() && 
+        b.userId === user.id &&
+        b.id !== editingBook?.id
+      );
+      if (isDuplicate) {
+        setDuplicateBookCheck({ data: bookData, stayOpen });
+        return;
+      }
+    }
+
+    setIsSyncing(true);
     const db = await initDB();
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     
-    let newBook: Book;
-    if (editingBook) {
-      newBook = { ...editingBook, ...bookData, userId: user?.id };
-    } else {
-      newBook = {
-        ...bookData,
-        id: crypto.randomUUID(),
-        userId: user?.id,
-        createdAt: Date.now()
-      };
-    }
+    const newBook: Book = editingBook 
+      ? { ...editingBook, ...bookData } 
+      : { ...bookData, id: crypto.randomUUID(), userId: user.id, createdAt: Date.now() };
 
     const request = store.put(newBook);
     request.onsuccess = () => {
@@ -172,62 +148,63 @@ const App: React.FC = () => {
         if (editingBook) return prev.map(b => b.id === newBook.id ? newBook : b);
         return [newBook, ...prev];
       });
+      setIsSyncing(false);
       if (!stayOpen) {
         setIsModalOpen(false);
         setEditingBook(null);
       }
+      setDuplicateBookCheck(null);
     };
   };
 
   const confirmDelete = async () => {
     if (!bookToDelete) return;
-
-    try {
-      const db = await initDB();
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      
-      const request = store.delete(bookToDelete.id);
-      request.onsuccess = () => {
-        setAllBooks(prev => prev.filter(b => b.id !== bookToDelete.id));
-        setBookToDelete(null);
-      };
-    } catch (err) {
-      console.error("Failed to delete book", err);
-      alert("حدث خطأ أثناء محاولة حذف الكتاب.");
-    }
-  };
-
-  const loadMore = () => setVisibleCount(prev => prev + 20);
-
-  const updateSearchFilter = (key: keyof SearchFilters, value: string) => {
-    setVisibleCount(20); // Reset scroll on search
-    setSearchFilters(prev => ({ ...prev, [key]: value }));
+    setIsSyncing(true);
+    const db = await initDB();
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME).delete(bookToDelete.id);
+    store.onsuccess = () => {
+      setAllBooks(prev => prev.filter(b => b.id !== bookToDelete.id));
+      setBookToDelete(null);
+      setIsSyncing(false);
+    };
   };
 
   return (
     <div className="min-h-screen bg-[#FDFDFF] flex flex-col text-right" dir="rtl">
       <Header 
-        onAddClick={() => { setEditingBook(null); setIsModalOpen(true); }} 
+        onAddClick={() => { if(!user) setIsAuthOpen(true); else { setEditingBook(null); setIsModalOpen(true); } }} 
         onAuthClick={() => setIsAuthOpen(true)}
         user={user}
         onLogout={handleLogout}
+        isSyncing={isSyncing}
       />
       
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 md:mt-12 w-full pb-20">
         <StatsCards stats={stats} />
         
-        {user && (
-           <div className="mt-8 flex items-center justify-center">
-             <div className="flex items-center gap-3 bg-green-50 text-green-600 px-6 py-3 rounded-2xl border border-green-100 animate-in fade-in slide-in-from-bottom-2">
-               <Cloud size={18} className="animate-pulse" />
-               <span className="text-sm font-bold">المزامنة السحابية نشطة لجهازك الآن عبر Vercel</span>
-             </div>
-           </div>
+        {!user && !loading && (
+          <div className="mt-8 bg-[#94B4BC]/5 border border-[#94B4BC]/20 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#94B4BC] shadow-sm">
+                <Info size={24} />
+              </div>
+              <div>
+                <h4 className="font-black text-slate-800">سجل دخولك لتفعيل المزامنة</h4>
+                <p className="text-sm text-slate-500 font-bold">يمكنك الوصول لمكتبتك من أي جهاز وحفظ بياناتك بأمان.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsAuthOpen(true)}
+              className="bg-[#94B4BC] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#7da1aa] transition-all shadow-lg shadow-[#94B4BC]/20"
+            >
+              دخول الآن
+            </button>
+          </div>
         )}
 
         <div className="mt-8 md:mt-12 bg-white rounded-[2rem] md:rounded-[3rem] shadow-sm border border-slate-50 p-6 md:p-8 mb-10">
-          <SearchBar filters={searchFilters} onFilterChange={updateSearchFilter} />
+          <SearchBar filters={searchFilters} onFilterChange={(k, v) => setSearchFilters(p => ({...p, [k]: v}))} />
         </div>
 
         <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4 px-4">
@@ -237,12 +214,6 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-2xl md:text-3xl font-black text-slate-800">محتويات المكتبة</h2>
           </div>
-          <div className="flex items-center gap-2 text-sm font-bold text-slate-400 bg-slate-50 px-5 py-2 rounded-full w-fit">
-             <span className="text-[#94B4BC] min-w-[3ch] inline-block text-center">
-                <AnimatedNumber value={filteredBooks.length} />
-             </span> 
-             {" "} كتاب في المكتبة
-          </div>
         </div>
 
         {loading ? (
@@ -251,67 +222,33 @@ const App: React.FC = () => {
             <p className="font-bold">جاري تحميل البيانات...</p>
           </div>
         ) : (
-          <>
-            <BookTable 
-              books={currentVisibleBooks} 
-              onDelete={(id) => {
-                const book = allBooks.find(b => b.id === id);
-                if (book) setBookToDelete(book);
-              }} 
-              onEdit={(b) => { setEditingBook(b); setIsModalOpen(true); }}
-            />
-            
-            {filteredBooks.length > visibleCount && (
-              <div className="mt-16 flex justify-center">
-                <button 
-                  onClick={loadMore}
-                  className="px-10 py-4 bg-white border-2 border-[#94B4BC] text-[#94B4BC] font-black rounded-2xl hover:bg-[#94B4BC] hover:text-white transition-all shadow-lg shadow-[#94B4BC]/5"
-                >
-                  تحميل المزيد من الكتب
-                </button>
-              </div>
-            )}
-          </>
+          <BookTable 
+            books={filteredBooks.slice(0, visibleCount)} 
+            onDelete={(id) => setBookToDelete(allBooks.find(b => b.id === id) || null)} 
+            onEdit={(b) => { setEditingBook(b); setIsModalOpen(true); }}
+          />
         )}
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-slate-100 py-10">
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center text-center">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe className="text-[#94B4BC]" size={20} />
-            <span className="text-lg font-black text-slate-800 tracking-tight">مكتبة الضياء</span>
+          <div className="mb-1">
+            <span className="text-2xl font-black text-[#94B4BC] tracking-tight">مكتبة الضياء</span>
           </div>
-          <p className="text-slate-400 text-sm font-bold flex items-center gap-1.5 mb-2">
-            صنع بكل <Heart className="text-red-400 fill-red-400" size={14} /> لخدمة الباحثين وطلاب العلم
+          <p className="text-slate-400 text-sm font-black uppercase tracking-[0.3em] mb-4 select-none">
+            ALDIAA ELECTRONIC LIBRARY
           </p>
-          <div className="flex items-center gap-4 text-[10px] text-slate-300 font-bold uppercase tracking-widest mt-4">
-            <span>حقوق النشر © {new Date().getFullYear()}</span>
-            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-            <span>نشر بواسطة VERCEL</span>
-          </div>
+          <div className="w-12 h-1 bg-slate-50 rounded-full mb-4"></div>
+          <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest">
+            حقوق النشر © {new Date().getFullYear()}
+          </p>
         </div>
       </footer>
 
-      <BookFormModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSubmit={handleSaveBook}
-        initialData={editingBook || undefined}
-      />
-
-      <DeleteConfirmModal 
-        isOpen={!!bookToDelete}
-        onClose={() => setBookToDelete(null)}
-        onConfirm={confirmDelete}
-        bookTitle={bookToDelete?.title || ''}
-      />
-
-      <AuthModal 
-        isOpen={isAuthOpen} 
-        onClose={() => setIsAuthOpen(false)} 
-        onLogin={handleLogin}
-      />
+      <BookFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleSaveBook} initialData={editingBook || undefined} />
+      <DeleteConfirmModal isOpen={!!bookToDelete} onClose={() => setBookToDelete(null)} onConfirm={confirmDelete} bookTitle={bookToDelete?.title || ''} />
+      <DuplicateWarningModal isOpen={!!duplicateBookCheck} onClose={() => setDuplicateBookCheck(null)} onConfirm={() => duplicateBookCheck && handleSaveBook(duplicateBookCheck.data, duplicateBookCheck.stayOpen, true)} bookTitle={duplicateBookCheck?.data.title || ''} />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLogin} />
     </div>
   );
 };

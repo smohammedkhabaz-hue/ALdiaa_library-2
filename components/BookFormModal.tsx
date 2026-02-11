@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Book } from '../types';
 import { X, Save, BookPlus, CopyPlus, Plus, Minus, RotateCcw } from 'lucide-react';
@@ -122,7 +123,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ isOpen, onClose, onSubmit
                   name="title" 
                   value={formData.title} 
                   onChange={handleChange}
-                  className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white font-bold" 
+                  className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white font-bold text-black" 
                   placeholder="عنوان الكتاب..." 
                 />
               </div>
@@ -135,7 +136,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ isOpen, onClose, onSubmit
                     name="author" 
                     value={formData.author} 
                     onChange={handleChange}
-                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white" 
+                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white text-black font-bold" 
                     placeholder="اسم المؤلف..." 
                   />
                 </div>
@@ -146,7 +147,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ isOpen, onClose, onSubmit
                     name="editor" 
                     value={formData.editor} 
                     onChange={handleChange}
-                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white" 
+                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white text-black font-bold" 
                     placeholder="اسم المحقق..." 
                   />
                 </div>
@@ -160,7 +161,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ isOpen, onClose, onSubmit
                     name="course" 
                     value={formData.course} 
                     onChange={handleChange}
-                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white" 
+                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white text-black font-bold" 
                     placeholder="اسم المقرر..." 
                   />
                 </div>
@@ -182,7 +183,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ isOpen, onClose, onSubmit
                         name="volumes" 
                         value={formData.volumes} 
                         onChange={handleChange} 
-                        className="w-full px-5 py-3 h-12 rounded-xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white font-bold text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                        className="w-full px-5 py-3 h-12 rounded-xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white font-black text-center text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                       />
                     </div>
                     <button 
@@ -204,7 +205,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ isOpen, onClose, onSubmit
                     name="publisher" 
                     value={formData.publisher} 
                     onChange={handleChange}
-                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white" 
+                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white text-black font-bold" 
                     placeholder="اسم دار النشر..." 
                   />
                 </div>
@@ -215,7 +216,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ isOpen, onClose, onSubmit
                     name="printPlace" 
                     value={formData.printPlace} 
                     onChange={handleChange}
-                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white" 
+                    className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white text-black font-bold" 
                     placeholder="اسم مكان الطباعة..." 
                   />
                 </div>
@@ -229,7 +230,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ isOpen, onClose, onSubmit
                   value={formData.notes} 
                   onChange={handleChange}
                   rows={3} 
-                  className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white resize-none" 
+                  className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] outline-none transition-all bg-slate-50/50 hover:bg-white resize-none text-black font-medium" 
                   placeholder="أي معلومات أخرى تود إضافتها..." 
                 />
               </div>

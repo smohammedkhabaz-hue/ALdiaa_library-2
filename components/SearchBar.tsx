@@ -29,7 +29,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ filters, onFilterChange }) => {
           placeholder={placeholder}
           value={filters[id]}
           onChange={(e) => onFilterChange(id, e.target.value)}
-          className="w-full h-12 px-4 pl-10 rounded-xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] transition-all outline-none bg-slate-50/50 text-slate-700 font-medium placeholder:text-slate-300"
+          className="w-full h-12 px-4 pl-10 rounded-xl border border-slate-200 focus:ring-4 focus:ring-[#94B4BC]/10 focus:border-[#94B4BC] transition-all outline-none bg-slate-50/50 text-black font-bold placeholder:text-slate-300"
         />
         {filters[id] && (
           <button
